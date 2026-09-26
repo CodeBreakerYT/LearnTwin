@@ -169,12 +169,12 @@ One-time Firebase setup:
 2. Firestore: create a database and publish the rules in `firestore.rules` (each user can only read and write their own document).
 3. Authentication → Settings → **Authorized domains**: add your deployed domain (for example `your-app.vercel.app`) so Google sign-in works there.
 
-The Firebase web config in `src/lib/firebase.ts` is public by design; override it with `NEXT_PUBLIC_FIREBASE_*` variables if you use another project.
+The Firebase web config is read from `NEXT_PUBLIC_FIREBASE_*` environment variables (nothing is hardcoded). Without them the app runs as guest-only. Restrict the web API key in Google Cloud Console (Credentials) to your site's domains and to the Identity Toolkit and Firestore APIs.
 
 ## Deploying (Vercel)
 
 1. Push this folder (including `public/models`, the VRM characters) to GitHub and import it in Vercel. Framework: Next.js.
-2. Add environment variables: `GROQ_API_KEY` (and optionally `GROQ_MODEL`). Do not prefix the Groq key with `NEXT_PUBLIC_`.
+2. Add environment variables: `GROQ_API_KEY` (never prefixed with `NEXT_PUBLIC_`) and the six `NEXT_PUBLIC_FIREBASE_*` values. `netlify.toml` already tells Netlify's secret scanner that the six Firebase variables are public. `GROQ_API_KEY` is read only on the server through `src/lib/ai/env.ts` and is kept out of the build output, so it stays fully scanned.
 3. Deploy, then add the Vercel domain to Firebase authorized domains (step 3 above).
 
 ## The 3-minute judge demo

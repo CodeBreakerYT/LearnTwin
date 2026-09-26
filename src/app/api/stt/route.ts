@@ -1,3 +1,4 @@
+import { serverEnv } from "@/lib/ai/env";
 import { groqConfigured, isDemoMode } from "@/lib/ai/groq";
 
 const MAX_BYTES = 3_000_000;
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
   try {
     const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      headers: { Authorization: `Bearer ${serverEnv("GROQ_API_KEY")}` },
       body: out,
       signal: AbortSignal.timeout(12000),
     });

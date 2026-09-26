@@ -2,12 +2,14 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { GoogleAuthProvider, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut as fbSignOut, type User } from "firebase/auth";
-import { firebaseAuth } from "@/lib/firebase";
+import { firebaseAuth, firebaseConfigured } from "@/lib/firebase";
 
 type Ctx = {
   user: User | null;
   /** False until Firebase has told us whether someone is signed in. */
   ready: boolean;
+  /** False when Firebase is not configured (guest-only mode). */
+  enabled: boolean;
   google: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -21,6 +23,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!firebaseConfigured) {
+      // No Firebase config: run as a guest instead of failing.
+      const id = setTimeout(() => setReady(true), 0);
+      return () => clearTimeout(id);
+    }
     return onAuthStateChanged(firebaseAuth(), (u) => {
       setUser(u);
       setReady(true);
@@ -30,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: Ctx = {
     user,
     ready,
+    enabled: firebaseConfigured,
     google: async () => void (await signInWithPopup(firebaseAuth(), new GoogleAuthProvider())),
     signIn: async (e, p) => void (await signInWithEmailAndPassword(firebaseAuth(), e, p)),
     signUp: async (e, p) => void (await createUserWithEmailAndPassword(firebaseAuth(), e, p)),

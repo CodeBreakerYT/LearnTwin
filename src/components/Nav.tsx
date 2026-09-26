@@ -33,7 +33,7 @@ export function DemoBadge() {
 export default function Nav() {
   const path = usePathname();
   const { twin } = useTwin();
-  const { user, ready, signOut } = useAuth();
+  const { user, ready, enabled, signOut } = useAuth();
   const [menu, setMenu] = useState(false);
   const lvl = twin ? levelInfo(twin.xp) : null;
   return (
@@ -75,7 +75,7 @@ export default function Nav() {
                 </span>
               </>
             )}
-            {ready && !user && <Link href="/login" className="btn btn-ghost !px-4 !py-1.5 !text-sm">Sign in</Link>}
+            {ready && enabled && !user && <Link href="/login" className="btn btn-ghost !px-4 !py-1.5 !text-sm">Sign in</Link>}
             {user && (
               <div className="relative">
                 <button onClick={() => setMenu((v) => !v)} aria-label="Account" className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-[#a5b1ff] to-[#5eead4] text-sm font-bold text-[#07080f]">

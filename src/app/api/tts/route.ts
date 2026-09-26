@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { serverEnv } from "@/lib/ai/env";
 import { groqConfigured, isDemoMode } from "@/lib/ai/groq";
 
 const VOICE = { nova: "diana", byte: "hannah", atlas: "autumn" } as const;
@@ -12,8 +13,8 @@ export async function POST(req: Request) {
   try {
     const res = await fetch("https://api.groq.com/openai/v1/audio/speech", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-      body: JSON.stringify({ model: process.env.GROQ_TTS_MODEL || "canopylabs/orpheus-v1-english", input: parsed.data.text, voice: VOICE[parsed.data.characterId], response_format: "wav" }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serverEnv("GROQ_API_KEY")}` },
+      body: JSON.stringify({ model: serverEnv("GROQ_TTS_MODEL") || "canopylabs/orpheus-v1-english", input: parsed.data.text, voice: VOICE[parsed.data.characterId], response_format: "wav" }),
       signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) return Response.json({ error: "voice unavailable" }, { status: 503 });
