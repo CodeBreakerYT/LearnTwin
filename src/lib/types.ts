@@ -139,6 +139,8 @@ export type Activity = {
   explain?: { title: string; body: string; example: { problem: string; steps: string[] } };
   reasons: string[];
   generatedBy: "engine" | "ai";
+  /** True for the short lesson that introduces a concept before any question. */
+  lesson?: boolean;
 };
 
 export type RemediationPlan = {
@@ -182,6 +184,8 @@ export type LearningTwin = {
   history: HistoryPoint[];
   /** Concept mastery when the profile started, used to show what has improved. */
   baseline: Record<string, number>;
+  /** Concepts whose introductory lesson has been taught. */
+  lessonsSeen?: string[];
   sessions: SessionRecord[];
   session: SessionState;
   lastChanges: TwinChange[];

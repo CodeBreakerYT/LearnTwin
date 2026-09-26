@@ -1,6 +1,7 @@
+import { MORE_MISCONCEPTIONS } from "./misconceptions2";
 import type { Misconception } from "./types";
 
-export const MISCONCEPTIONS: Misconception[] = [
+const MATH_MISCONCEPTIONS: Misconception[] = [
   {
     id: "inverse-op",
     conceptId: "linear-equations",
@@ -138,6 +139,8 @@ export const MISCONCEPTIONS: Misconception[] = [
     guidedQuestionId: "g-area-perimeter",
   },
 ];
+
+export const MISCONCEPTIONS: Misconception[] = [...MATH_MISCONCEPTIONS, ...MORE_MISCONCEPTIONS];
 
 export const misconceptionById = (id: string) => MISCONCEPTIONS.find((m) => m.id === id);
 export const misconceptionsFor = (conceptId: string) => MISCONCEPTIONS.filter((m) => m.conceptId === conceptId);

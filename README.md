@@ -42,6 +42,18 @@ SDG 4 calls for inclusive and equitable quality education and lifelong learning.
 | **Gamification** | XP, day streak, levels, milestones and concept unlocks, kept secondary to the learning loop. |
 | **Demo mode** | The whole flow works with no API key, using deterministic analysis. |
 
+## Subjects and mentors
+
+Each mentor teaches their own subject, and the Learning Twin keeps one model across all of them:
+
+| Mentor | Subject | Skills taught (each with a spoken lesson, a 3D scene and a check) |
+| --- | --- | --- |
+| Nova | Mathematics | Fractions, percentages, ratios, linear equations, functions, word problems, geometry |
+| Byte | Programming | Variables, if/else, loops, lists |
+| Atlas | Geography | Continents and oceans, latitude and longitude, map scale, time zones |
+
+Adding a subject means adding concepts, lesson beats, a scene builder (`lib/visuals*.ts`), questions and misconceptions.
+
 ## Pages
 
 | Route | Purpose |

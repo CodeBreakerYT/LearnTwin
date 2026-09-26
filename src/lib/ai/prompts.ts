@@ -1,11 +1,12 @@
 import { CHARACTERS } from "../characters";
+import { subjectById, subjectOfConcept } from "../curriculum";
 import { misconceptionsFor } from "../misconceptions";
 import type { CharacterId, Question } from "../types";
 import type { TwinContext } from "./schemas";
 
 export const ANALYZER_SYSTEM = `You are the misconception-analysis module of LearnTwin, an educational system that maintains a model of how one student learns.
-You receive a maths question, the verified correct answer, the student's answer, and a compact summary of the student's Learning Twin.
-Diagnose WHY the student answered as they did. Be honest about uncertainty: if the answer looks like a random slip rather than a pattern, say so and lower your confidence.
+You receive a question, the verified correct answer, the student's answer, and a compact summary of the student's Learning Twin.
+The subject may be mathematics, programming or geography. Diagnose WHY the student answered as they did. Be honest about uncertainty: if the answer looks like a random slip rather than a pattern, say so and lower your confidence.
 Reply with a single JSON object and nothing else, using exactly these keys:
 {
   "isCorrect": boolean,
@@ -24,7 +25,7 @@ export function analyzerUser(q: Question, answer: string, ctx: TwinContext, resp
   const catalog = misconceptionsFor(q.conceptId).map((m) => ({ id: m.id, label: m.label, description: m.description, errorType: m.errorType }));
   return JSON.stringify(
     {
-      subject: "Mathematics",
+      subject: subjectById(subjectOfConcept(q.conceptId)).name,
       conceptId: q.conceptId,
       question: q.prompt,
       verifiedCorrectAnswer: q.answer,
@@ -55,7 +56,7 @@ Rules:
 - Reply in at most 25 words (two short sentences), plain text, no markdown, no emoji. Never end with a question: the app asks the next question itself.`;
 }
 
-export const ACTIVITY_SYSTEM = `You write short scaffolding for one maths practice question inside LearnTwin.
+export const ACTIVITY_SYSTEM = `You write short scaffolding for one check question inside LearnTwin.
 You are given the question and what the student has struggled with. Return a single JSON object with exactly two keys:
 {"hint": "one sentence that nudges the student toward the method without stating the final answer", "expectedSkill": "a short phrase naming the skill being practised"}
 Never include the final numeric answer in the hint.`;

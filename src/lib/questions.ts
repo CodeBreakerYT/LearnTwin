@@ -1,10 +1,11 @@
+import { MORE_QUESTIONS } from "./questions2";
 import type { Difficulty, Question } from "./types";
 
 type Q = Omit<Question, "conceptId" | "expectedSkill"> & { skill?: string };
 const make = (conceptId: string, skill: string, items: Q[]): Question[] =>
   items.map(({ skill: s, ...q }) => ({ ...q, conceptId, expectedSkill: s ?? skill }));
 
-export const QUESTIONS: Question[] = [
+const MATH_QUESTIONS: Question[] = [
   ...make("linear-equations", "Isolate x with inverse operations", [
     { id: "le-1", prompt: "Solve: x + 7 = 12", answer: 5, difficulty: "easy", hint: "What single operation cancels + 7?", solution: "Subtract 7 from both sides: x = 5.", traps: [{ value: 19, misconception: "sign-error", note: "Adding 7 moves the term the wrong way; +7 is cancelled by subtracting 7." }] },
     { id: "le-2", prompt: "Solve: 2x = 14", answer: 7, difficulty: "easy", hint: "x is multiplied by 2. What undoes multiplication?", solution: "Divide both sides by 2: x = 7.", traps: [{ value: 12, misconception: "inverse-op", note: "14 − 2 = 12 subtracts the coefficient instead of dividing by it." }, { value: 28, misconception: "inverse-op", note: "Multiplying by 2 again repeats the operation instead of undoing it." }] },
@@ -89,6 +90,8 @@ export const QUESTIONS: Question[] = [
     { id: "g-area-perimeter", prompt: "Guided: a rectangle is 4 by 6. What is its area?", answer: 24, difficulty: "guided", hint: "Area is the space inside, so multiply.", solution: "4 × 6 = 24.", scaffold: ["Step 1: area measures the inside, so multiply length × width", "Step 2: 4 × 6 = ?"] },
   ]),
 ];
+
+export const QUESTIONS: Question[] = [...MATH_QUESTIONS, ...MORE_QUESTIONS];
 
 export const questionById = (id: string) => QUESTIONS.find((q) => q.id === id);
 

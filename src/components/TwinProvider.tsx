@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { stats } from "@/lib/engine";
+import { ensureConcepts, stats } from "@/lib/engine";
 import { getLocalRepository, getRepository, guestId } from "@/lib/repo";
 import { createBlankTwin, createSeedTwin } from "@/lib/seed";
 import type { Source } from "@/lib/ai/schemas";
@@ -48,6 +48,7 @@ export function TwinProvider({ children }: { children: ReactNode }) {
         t = valid(guest) && stats(guest).totalAttempts > 0 ? { ...guest, studentId: uid! } : createBlankTwin(uid ?? guestId());
         await repo.save(t);
       }
+      ensureConcepts(t);
       if (cancelled) return;
       ref.current = t;
       setTwin(t);

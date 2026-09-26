@@ -1,4 +1,4 @@
-import { CONCEPTS, SUBJECT_ID, conceptById, conceptName } from "./curriculum";
+import { CONCEPTS, LESSONS, SUBJECT_ID, SUBJECT_OF_CHARACTER, conceptById, conceptName, conceptsOfSubject } from "./curriculum";
 import { CHARACTERS } from "./characters";
 import { misconceptionById, misconceptionLabel, misconceptionsFor } from "./misconceptions";
 import { questionById, questionsFor } from "./questions";
@@ -32,21 +32,39 @@ const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 export const subjectOf = (t: LearningTwin) => t.subjects[SUBJECT_ID];
 export const conceptOf = (t: LearningTwin, id: string): ConceptState => subjectOf(t).concepts[id];
 
+export const activeSubject = (t: LearningTwin) => SUBJECT_OF_CHARACTER[t.character];
+export const activeConcepts = (t: LearningTwin) => conceptsOfSubject(activeSubject(t));
+
+/** A prerequisite counts once it is understood well enough, or once it has been taught and checked. */
+const prereqMet = (t: LearningTwin, p: string) => {
+  const cs = conceptOf(t, p);
+  return cs.mastery >= 0.35 || ((t.lessonsSeen ?? []).includes(p) && cs.attempts > 0);
+};
+
+/** Older saves may lack newer concepts. */
+export function ensureConcepts(t: LearningTwin) {
+  const s = t.subjects[SUBJECT_ID];
+  for (const c of CONCEPTS) s.concepts[c.id] ??= { mastery: 0, confidence: 0, attempts: 0, correct: 0, misconceptions: [], lastAttempt: "", recentResults: [] };
+  t.lessonsSeen ??= [];
+  return t;
+}
+
 export function conceptStatus(t: LearningTwin, id: string): ConceptStatus {
   const def = conceptById(id);
-  if (def && def.prereqs.some((p) => conceptOf(t, p).mastery < 0.35)) return "locked";
+  if (def && def.prereqs.some((p) => !prereqMet(t, p))) return "locked";
   const m = conceptOf(t, id).mastery;
   return m >= 0.8 ? "mastered" : m >= 0.55 ? "developing" : "weak";
 }
 
-export const missingPrereqs = (t: LearningTwin, id: string) =>
-  (conceptById(id)?.prereqs ?? []).filter((p) => conceptOf(t, p).mastery < 0.35);
+export const missingPrereqs = (t: LearningTwin, id: string) => (conceptById(id)?.prereqs ?? []).filter((p) => !prereqMet(t, p));
 
 export function recomputeAggregates(t: LearningTwin) {
   const s = subjectOf(t);
-  const cs = CONCEPTS.map((c) => s.concepts[c.id]);
-  s.mastery = cs.reduce((a, c) => a + c.mastery, 0) / cs.length;
-  s.confidence = cs.reduce((a, c) => a + c.confidence, 0) / cs.length;
+  // Only concepts the learner has actually met count towards overall mastery.
+  const met = CONCEPTS.map((c) => s.concepts[c.id]).filter((c) => c.attempts > 0);
+  const cs = met.length ? met : [];
+  s.mastery = cs.length ? cs.reduce((a, c) => a + c.mastery, 0) / cs.length : 0;
+  s.confidence = cs.length ? cs.reduce((a, c) => a + c.confidence, 0) / cs.length : 0;
   t.overallMastery = s.mastery;
 }
 
@@ -96,8 +114,8 @@ export const ACHIEVEMENTS: Record<string, { name: string; desc: string }> = {
 
 /* ------------------------------------------------- insight / recommenders */
 
-export function strongestWeakest(t: LearningTwin) {
-  const list = CONCEPTS.map((c) => ({ id: c.id, name: c.name, m: conceptOf(t, c.id).mastery }));
+export function strongestWeakest(t: LearningTwin, subjectId?: string) {
+  const list = (subjectId ? conceptsOfSubject(subjectId) : CONCEPTS).map((c) => ({ id: c.id, name: c.name, m: conceptOf(t, c.id).mastery }));
   const sorted = [...list].sort((a, b) => b.m - a.m);
   return { strongest: sorted[0], weakest: sorted[sorted.length - 1] };
 }
@@ -286,26 +304,45 @@ export function decideDifficulty(t: LearningTwin, conceptId: string, responseTim
 
 function chooseConcept(t: LearningTwin, justConceptId: string | null, correct: boolean) {
   const recent = t.recentActivity.slice(-6).map((e) => e.conceptId);
-  const runOnSame = (() => {
-    let n = 0;
-    for (let i = t.recentActivity.length - 1; i >= 0 && t.recentActivity[i].conceptId === justConceptId; i--) n++;
-    return n;
-  })();
-  const scored = CONCEPTS.filter((c) => conceptStatus(t, c.id) !== "locked").map((c, order) => {
+  const scored = activeConcepts(t).filter((c) => conceptStatus(t, c.id) !== "locked").map((c, order) => {
     const cs = conceptOf(t, c.id);
     let s = 1 - cs.mastery;
     if (cs.misconceptions.some((m) => t.misconceptionLog[m] && !t.misconceptionLog[m].resolved)) s += 0.25;
     if (cs.attempts === 0) s += 0.15;
     if (!recent.includes(c.id)) s += 0.1;
-    if (c.id === justConceptId) s += correct && cs.mastery < 0.85 && runOnSame < 3 ? 0.35 : correct ? -0.5 : 0.4;
+    if (c.id === justConceptId) s += correct ? -0.5 : 0.4;
     return { c, s: s - order * 0.001 };
   });
   scored.sort((a, b) => b.s - a.s);
   return { concept: scored[0].c.id, why: scored[0].c.id === justConceptId ? null : conceptName(scored[0].c.id) };
 }
 
+/** Teach a concept before asking about it. */
+export function lessonActivity(t: LearningTwin, conceptId: string, reasons: string[]): Activity | null {
+  const lesson = LESSONS[conceptId];
+  if (!lesson || (t.lessonsSeen ?? []).includes(conceptId)) return null;
+  return {
+    id: uid("act"),
+    kind: "explain",
+    conceptId,
+    prompt: lesson.title,
+    difficulty: "guided",
+    hint: "",
+    expectedSkill: conceptById(conceptId)?.blurb ?? "",
+    strategy: "example",
+    explain: { title: lesson.title, body: lesson.body, example: lesson.example },
+    reasons,
+    generatedBy: "engine",
+    lesson: true,
+  };
+}
+
 export function chooseNormalActivity(t: LearningTwin, justConceptId: string | null, correct: boolean, responseTimeSec: number | null): Activity {
   const { concept, why } = chooseConcept(t, justConceptId, correct);
+  if (conceptOf(t, concept).attempts === 0) {
+    const lesson = lessonActivity(t, concept, [`${conceptName(concept)} is new, so the Twin teaches it first.`]);
+    if (lesson) return lesson;
+  }
   const d = decideDifficulty(t, concept, responseTimeSec);
   const reasons = [...d.reasons];
   if (why) {
@@ -457,13 +494,13 @@ export function applyAttempt(prev: LearningTwin, input: AttemptInput): AttemptRe
       next = explainActivity(t, nextPlan, s, ["Re-test missed, so the misconception is still active.", `Trying a different explanation style: “${strategyLabel(s)}”.`]);
       t.learningPatterns.strategyEffectiveness[s].tried += 1;
     }
-  } else if (!correct && rec && rec.count >= 2) {
+  } else if (!correct && rec) {
     outcome = "pattern";
     const s = pickStrategy(t, rec.id, [activity.strategy], activity.strategy, analysis.recommendedTeachingStrategy);
     nextPlan = { misconceptionId: rec.id, conceptId: activity.conceptId, stage: "explain", strategiesTried: [activity.strategy, s], rounds: 1, failedQuestionId: activity.questionId ?? "" };
     t.learningPatterns.strategyEffectiveness[s].tried += 1;
     next = explainActivity(t, nextPlan, s, [
-      `“${misconceptionLabel(rec.id)}” has now appeared ${rec.count} times, so another question would not fix it.`,
+      `“${misconceptionLabel(rec.id)}” came up, so the Twin will teach it again another way instead of asking more questions.`,
       `Switching teaching strategy: ${strategyLabel(activity.strategy)} → ${strategyLabel(s)}.`,
       "Plan: explain → simpler example → guided question → re-test.",
     ]);
@@ -557,7 +594,15 @@ function award(t: LearningTwin, id: string, changes: TwinChange[]) {
 export function advancePlan(prev: LearningTwin): LearningTwin {
   const t: LearningTwin = structuredClone(prev);
   const plan = t.session.plan;
-  if (!plan || t.session.activity.kind !== "explain") return t;
+  const current = t.session.activity;
+  if (current.kind === "explain" && current.lesson) {
+    // The lesson is done: now the learner tries one.
+    t.lessonsSeen = [...(t.lessonsSeen ?? []), current.conceptId];
+    const d = decideDifficulty(t, current.conceptId, null);
+    t.session.activity = questionActivity(t, current.conceptId, d.level === "hard" ? "medium" : d.level, [`You just learned ${conceptName(current.conceptId)}. Now you try one.`, ...d.reasons.slice(0, 1)]);
+    return t;
+  }
+  if (!plan || current.kind !== "explain") return t;
   const strategy = t.session.activity.strategy;
   t.session.plan = { ...plan, stage: "guided" };
   t.session.activity = guidedActivity(plan, strategy, [
@@ -574,15 +619,22 @@ export function practiceConcept(prev: LearningTwin, conceptId: string): Learning
   const active = conceptOf(t, conceptId).misconceptions.map((m) => t.misconceptionLog[m]).find((m) => m && !m.resolved);
   t.session.plan = null;
   t.session.correctInRow = 0;
-  t.session.activity = questionActivity(t, conceptId, d.level, [`Chosen from the knowledge graph: ${conceptName(conceptId)}.`, ...d.reasons], {
+  const lesson = conceptOf(t, conceptId).attempts === 0 ? lessonActivity(t, conceptId, [`Let's learn ${conceptName(conceptId)} first.`]) : null;
+  t.session.activity = lesson ?? questionActivity(t, conceptId, d.level, [`Chosen from the knowledge graph: ${conceptName(conceptId)}.`, ...d.reasons], {
     misconceptionId: active?.id ?? null,
   });
   t.session.message = "";
   return t;
 }
 
+/** Each mentor teaches their own subject, so switching mentor switches what is taught. */
 export function setCharacter(prev: LearningTwin, id: CharacterId): LearningTwin {
-  return { ...prev, character: id, session: { ...prev.session, message: "" } };
+  const t: LearningTwin = structuredClone(prev);
+  if (t.character === id) return t;
+  t.character = id;
+  t.session = { activity: null as never, plan: null, message: "", correctInRow: 0 };
+  t.session.activity = chooseNormalActivity(t, null, true, null);
+  return t;
 }
 
 export const characterOf = (t: LearningTwin) => CHARACTERS[t.character];

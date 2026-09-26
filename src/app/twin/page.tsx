@@ -8,7 +8,8 @@ import ConceptDetail from "@/components/ConceptDetail";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
 import { useTwin } from "@/components/TwinProvider";
 import { Page, Ring, Skeleton } from "@/components/ui";
-import { levelInfo, practiceConcept, stats, strongestWeakest } from "@/lib/engine";
+import { activeSubject, levelInfo, practiceConcept, stats, strongestWeakest } from "@/lib/engine";
+import { subjectById } from "@/lib/curriculum";
 
 export default function TwinPage() {
   const { twin, update, resetDemo, resetBlank } = useTwin();
@@ -40,7 +41,8 @@ export default function TwinPage() {
   }
 
   const lvl = levelInfo(twin.xp);
-  const { weakest } = strongestWeakest(twin);
+  const subject = activeSubject(twin);
+  const { weakest } = strongestWeakest(twin, subject);
   const hint = stats(twin).totalAttempts === 0 ? "Answer a few questions and your skills will light up." : `Next up: ${weakest.name}`;
   const insight = { next: hint };
 
@@ -52,13 +54,13 @@ export default function TwinPage() {
   return (
     <Page>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Your skills</h1>
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Your {subjectById(subject).name} skills</h1>
         <div className="chip">Level {lvl.level} · {lvl.name}</div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <section className="glass overflow-hidden p-2 sm:p-3">
-          <KnowledgeGraph twin={twin} selected={selected} onSelect={setSelected} />
+          <KnowledgeGraph twin={twin} selected={selected} onSelect={setSelected} subject={subject} />
         </section>
         <div className="flex flex-col gap-5">
           <section className="glass flex items-center gap-5 p-5">

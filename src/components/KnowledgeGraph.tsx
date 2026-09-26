@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import { memo, useMemo } from "react";
 import { Background, BackgroundVariant, Controls, Handle, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import { Lock, TrendingDown, TrendingUp } from "lucide-react";
-import { CONCEPTS, DOMAINS, DOMAIN_POS, SUBJECT_NAME } from "@/lib/curriculum";
+import { DOMAIN_POS, conceptsOfSubject, domainsOfSubject, subjectById } from "@/lib/curriculum";
 import { conceptOf, conceptStatus, domainMastery, pct } from "@/lib/engine";
 import type { ConceptStatus, LearningTwin } from "@/lib/types";
 import { STATUS } from "./ui";
@@ -75,11 +75,14 @@ export function recentDeltas(t: LearningTwin): Record<string, number> {
   return out;
 }
 
-export default function KnowledgeGraph({ twin, selected, onSelect }: { twin: LearningTwin; selected: string | null; onSelect: (id: string) => void }) {
+export default function KnowledgeGraph({ twin, selected, onSelect, subject }: { twin: LearningTwin; selected: string | null; onSelect: (id: string) => void; subject: string }) {
   const { nodes, edges } = useMemo(() => {
+    const CONCEPTS = conceptsOfSubject(subject);
+    const DOMAINS = domainsOfSubject(subject);
+    const rootMastery = CONCEPTS.length ? CONCEPTS.reduce((a, c) => a + conceptOf(twin, c.id).mastery, 0) / CONCEPTS.length : 0;
     const deltas = recentDeltas(twin);
     const nodes: Node[] = [
-      { id: "root", type: "cluster", position: DOMAIN_POS.root, data: { name: SUBJECT_NAME, mastery: twin.overallMastery, root: true }, draggable: false, selectable: false },
+      { id: "root", type: "cluster", position: DOMAIN_POS.root, data: { name: subjectById(subject).name, mastery: rootMastery, root: true }, draggable: false, selectable: false },
       ...DOMAINS.map<Node>((d) => ({ id: d.id, type: "cluster", position: DOMAIN_POS[d.id], data: { name: d.name, mastery: domainMastery(twin, d.id) }, draggable: false, selectable: false })),
       ...CONCEPTS.map<Node>((c) => {
         const cs = conceptOf(twin, c.id);
@@ -105,7 +108,7 @@ export default function KnowledgeGraph({ twin, selected, onSelect }: { twin: Lea
       });
     }
     return { nodes, edges };
-  }, [twin, selected]);
+  }, [twin, selected, subject]);
 
   return (
     <div className="relative h-[500px] w-full overflow-hidden rounded-2xl">

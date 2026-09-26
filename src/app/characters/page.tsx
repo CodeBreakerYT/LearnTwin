@@ -1,20 +1,22 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Check, Lightbulb, Target } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { Page, Skeleton } from "@/components/ui";
 import { useTwin } from "@/components/TwinProvider";
-import { CHARACTER_LIST, CHARACTERS, type Character } from "@/lib/characters";
-import { recommendCharacter, setCharacter } from "@/lib/engine";
+import { CHARACTER_LIST, type Character } from "@/lib/characters";
+import { setCharacter } from "@/lib/engine";
+import { subjectById } from "@/lib/curriculum";
 
 const SAMPLES: Record<string, { problem: string; lines: string[] }> = {
   nova: { problem: "Solve 3x + 4 = 19", lines: ["First, take 4 away from both sides. What is left?", "Good. Now 3x = 15. What undoes “times 3”?", "Check it: does 3 × 5 + 4 give 19?"] },
-  byte: { problem: "Solve 3x + 4 = 19", lines: ["Challenge: get x alone in two moves.", "Move one: −4 both sides. Move two: ÷3.", "Bonus round: try 5x − 3 = 22 in under 20 seconds."] },
-  atlas: { problem: "Solve 3x + 4 = 19", lines: ["Imagine 3 identical boxes and 4 loose coins weighing 19 in total.", "Remove the coins first. The boxes share what is left equally.", "That is why we subtract, then divide."] },
+  byte: { problem: "for i in range(3): print(i)", lines: ["Watch the counter: it starts at 0, not 1.", "Pass one prints 0, pass two prints 1, pass three prints 2.", "Three passes, and it stops before 3."] },
+  atlas: { problem: "It is noon in London. What time is it 3 hours east?", lines: ["The Earth turns 15 degrees every hour.", "The sun reaches the east first, so the east is later.", "12 + 3 = 15:00, and you can see it on the globe."] },
 };
 
-function CharacterCard({ c, active, recommended, onPick }: { c: Character; active: boolean; recommended: boolean; onPick: () => void }) {
+function CharacterCard({ c, active, onPick }: { c: Character; active: boolean; onPick: () => void }) {
   const s = SAMPLES[c.id];
   return (
     <motion.article layout className="glass relative flex flex-col overflow-hidden" style={active ? { borderColor: `${c.accent}88`, boxShadow: `0 0 0 1px ${c.accent}55, 0 30px 80px -30px ${c.accent}66` } : undefined}>
@@ -25,11 +27,6 @@ function CharacterCard({ c, active, recommended, onPick }: { c: Character; activ
           <div className="eyebrow" style={{ color: c.accent }}>{c.role}</div>
           <h2 className="text-3xl font-semibold tracking-tight">{c.name}</h2>
         </div>
-        {recommended && (
-          <span className="absolute right-4 top-5 chip" style={{ color: c.accent, borderColor: `${c.accent}55` }}>
-            Recommended for you
-          </span>
-        )}
       </div>
       <div className="relative flex flex-1 flex-col gap-4 p-5 pt-2">
         <p className="text-muted">{c.tagline}</p>
@@ -39,7 +36,7 @@ function CharacterCard({ c, active, recommended, onPick }: { c: Character; activ
             <dd>{c.style}</dd>
           </div>
           <div>
-            <dt className="eyebrow mb-1 flex items-center gap-1.5"><Target className="size-3" /> Best suited for</dt>
+            <dt className="eyebrow mb-1 flex items-center gap-1.5"><Target className="size-3" /> Teaches</dt>
             <dd>{c.bestFor}</dd>
           </div>
         </dl>
@@ -52,7 +49,7 @@ function CharacterCard({ c, active, recommended, onPick }: { c: Character; activ
           </ul>
         </div>
         <button onClick={onPick} className={`btn mt-auto ${active ? "btn-ghost" : "btn-primary"}`} style={active ? { borderColor: `${c.accent}66`, color: c.accent } : undefined} aria-pressed={active}>
-          {active ? <><Check className="size-4" /> Active tutor</> : `Learn with ${c.name}`}
+          {active ? <><Check className="size-4" /> Learning {subjectById(c.subject).name}</> : `Learn ${subjectById(c.subject).name} with ${c.name}`}
         </button>
       </div>
     </motion.article>
@@ -61,30 +58,24 @@ function CharacterCard({ c, active, recommended, onPick }: { c: Character; activ
 
 export default function CharactersPage() {
   const { twin, update } = useTwin();
-  const rec = twin ? recommendCharacter(twin) : null;
+  const router = useRouter();
   return (
     <Page>
       <div className="mb-8 max-w-2xl">
         <div className="eyebrow mb-2">AI companions</div>
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Choose how you want to be taught.</h1>
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Pick a mentor. Pick a subject.</h1>
         <p className="mt-3 text-muted">
-          The character is the voice. The Learning Twin is the intelligence behind it: it decides <em>what</em> to teach and <em>how</em>, and the character delivers it in their own style.
+          Each mentor teaches their own subject. Your Learning Twin remembers what you know in each one and adapts how it is taught.
         </p>
       </div>
 
-      {rec && twin && (
-        <div className="glass mb-6 flex flex-wrap items-center gap-3 p-4 text-sm">
-          <span className="chip" style={{ color: CHARACTERS[rec.id].accent }}>Twin suggestion</span>
-          <span><strong className="font-semibold">{CHARACTERS[rec.id].name}</strong>: <span className="text-muted">{rec.reason}</span></span>
-        </div>
-      )}
 
       {!twin ? (
         <div className="grid gap-5 md:grid-cols-3"><Skeleton className="h-[640px]" /><Skeleton className="h-[640px]" /><Skeleton className="h-[640px]" /></div>
       ) : (
         <div className="grid gap-5 md:grid-cols-3">
           {CHARACTER_LIST.map((c) => (
-            <CharacterCard key={c.id} c={c} active={twin.character === c.id} recommended={rec?.id === c.id} onPick={() => update((t) => setCharacter(t, c.id))} />
+            <CharacterCard key={c.id} c={c} active={twin.character === c.id} onPick={() => { update((t) => setCharacter(t, c.id)); router.push("/learn"); }} />
           ))}
         </div>
       )}

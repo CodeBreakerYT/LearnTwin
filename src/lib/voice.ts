@@ -14,9 +14,9 @@ export type VoiceVars = {
 
 const T: Record<Situation, Record<CharacterId, (v: VoiceVars) => string>> = {
   intro: {
-    nova: () => "Let's solve this together. Take your time and show me your reasoning.",
-    byte: () => "Ready? Here's your next challenge. Go!",
-    atlas: () => "Here's a new one. Picture what the numbers stand for before you compute.",
+    nova: () => "Let's check it together.",
+    byte: () => "Quick check, together!",
+    atlas: () => "Let's see it through your eyes.",
   },
   correct: {
     nova: (v) => `That's right. Your reasoning held up on ${v.concept}. Let's keep building.`,
@@ -29,9 +29,9 @@ const T: Record<Situation, Record<CharacterId, (v: VoiceVars) => string>> = {
     atlas: (v) => `Interesting, let's trace where this went off the path. ${v.detail} Here's a gentler route.`,
   },
   pattern: {
-    nova: (v) => `I found a pattern. You've handled ${v.concept} well before (${v.mastery}), but ${v.pattern}. Let's slow down, use the ${v.strategy} approach, and then try a guided version.`,
-    byte: (v) => `Pattern spotted. ${v.concept} is solid at ${v.mastery}, but ${v.pattern}. New plan: the ${v.strategy} approach, one guided rep, then a re-test.`,
-    atlas: (v) => `I've noticed something. You know ${v.concept} (${v.mastery}), yet ${v.pattern}. Let's come at it from a different angle using the ${v.strategy} approach, then a guided walk.`,
+    nova: (v) => `I noticed something: ${v.pattern}. That's completely normal. Let's slow down and watch it together, the ${v.strategy} way.`,
+    byte: (v) => `Spotted it: ${v.pattern}. No stress. Let's watch it again, the ${v.strategy} way.`,
+    atlas: (v) => `I see where the path bent: ${v.pattern}. Let's look at it from a new angle, the ${v.strategy} way.`,
   },
   "guided-done": {
     nova: () => "That's the move. Now let's see whether it holds up without the steps written out.",
@@ -66,3 +66,10 @@ const GUIDED: Record<CharacterId, string> = {
   atlas: "Follow the trail I've marked, one step at a time.",
 };
 export const guidedIntro = (c: CharacterId) => GUIDED[c];
+
+const YOUR_TURN: Record<CharacterId, string> = {
+  nova: "Now let's check it together, using what we just saw.",
+  byte: "Quick check! Use what you just saw.",
+  atlas: "Let's see what you noticed on the path.",
+};
+export const yourTurn = (c: CharacterId) => YOUR_TURN[c];

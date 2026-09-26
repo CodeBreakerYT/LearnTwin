@@ -41,7 +41,7 @@ export async function tutorMessage(req: TutorRequest): Promise<{ message: string
           intro: "Welcome the student to a new question in one or two sentences.",
           correct: "Acknowledge correct reasoning briefly and hint at what comes next.",
           wrong: "Treat the mistake as information. Point at the likely cause using the analysis note. Say an easier one is next.",
-          pattern: "Say you found a pattern across several attempts. Name what the student does well, then the recurring slip, then say you are switching to the given teaching strategy followed by a guided question.",
+          pattern: "Say kindly that you noticed a pattern in how the student is thinking, name it, and say you will show it again with a picture. Do not quiz.",
           "guided-done": "Praise the guided step and say a re-test without scaffolding is next.",
           "guided-retry": "Reassure the student and say you will explain it a different way using the given strategy.",
           "retest-failed": "Reassure the student, say the misconception is still active and you will try the given strategy.",

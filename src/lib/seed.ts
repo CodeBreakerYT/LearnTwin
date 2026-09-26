@@ -1,5 +1,5 @@
 import { CONCEPTS, SUBJECT_ID } from "./curriculum";
-import { chooseNormalActivity, localDate, recomputeAggregates } from "./engine";
+import { chooseNormalActivity, ensureConcepts, localDate, recomputeAggregates } from "./engine";
 import { questionById } from "./questions";
 import { misconceptionById } from "./misconceptions";
 import type { ActivityEvent, ConceptState, Difficulty, LearningTwin, MisconceptionRecord, Strategy } from "./types";
@@ -96,6 +96,7 @@ function base(studentId: string): LearningTwin {
     achievements: [],
     history: [],
     baseline: {},
+    lessonsSeen: [],
     sessions: [],
     session: { activity: null as never, plan: null, message: "", correctInRow: 0 },
     lastChanges: [],
@@ -164,6 +165,8 @@ export function createSeedTwin(studentId: string): LearningTwin {
     S(5, ["word-problems", "fractions"], 7, 0.43, 74, "medium"),
     S(6, ["fractions", "ratios"], 9, 0.78, 130, "hard"),
   ];
+  ensureConcepts(t);
+  t.lessonsSeen = CONCEPTS.filter((c) => c.subject === "mathematics").map((c) => c.id);
   t.baseline = { "linear-equations": 0.72, fractions: 0.61, percentages: 0.5, ratios: 0.58, functions: 0.7, "word-problems": 0.4, "basic-geometry": 0.42 };
   recomputeAggregates(t);
 
