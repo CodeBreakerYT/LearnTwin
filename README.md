@@ -137,13 +137,12 @@ Next.js 16 (App Router) · TypeScript · React 19 · Tailwind CSS 4 · Framer Mo
 Requirements: Node.js 20+.
 
 ```bash
-cd proj
 npm install
-cp .env.example .env.local     # optional: add keys, otherwise it runs in DEMO MODE
+cp .env.example .env.local     # optional: add keys. Without them the app still runs (DEMO MODE, guest-only)
 npm run dev
 ```
 
-Open http://localhost:3000. `npm run dev` and `npm run build` first copy the VRM models from `../assets` into `public/models` (`scripts/sync-assets.mjs`).
+Open http://localhost:3000. The VRM character models are already included in `public/models`, so no extra step is needed. (`scripts/sync-assets.mjs` only copies them from a sibling `../assets` folder if one exists.)
 
 Production build:
 
